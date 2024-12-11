@@ -91,7 +91,27 @@ class Neo4jDriver:
             session.run(query)
             logging.info("CREATE RELATIONSHIP %s between %s with _id %s and %s with _id %s", type_relationship, start_node["label"], start_node["_id"], end_node["label"], end_node["_id"])
 
+    def create_event_relationship(self, type_relationship, start_node, end_node):
+        with self.driver.session() as session:
+            type_rela = type_relationship["label"].upper()
+            amount = float(type_relationship["amount"])
+            self.create_node("TOKEN", end_node)
+            query = """
+                        MATCH (n1: {} {{_id: '{}' }})
+                        MATCH (n2: {} {{_id: '{}' }})
+                        MERGE (n1)-[rel:{}]->(n2) SET rel.updated_at = localdatetime({{timezone: 'Asia/Ho_Chi_Minh'}}), rel.amount = {} RETURN n1, n2
+                    """.format(start_node["label"], start_node["_id"], end_node["label"], end_node["_id"], type_rela, amount)
+            session.run(query)
+            logging.info("CREATE RELATIONSHIP ACTION %s between %s with _id %s and %s with _id %s", type_rela, start_node["label"], start_node["_id"], end_node["label"], end_node["_id"])
     
+    def get_label_by_address(self, address):
+        with self.driver.session() as session:
+            query = "MATCH (n) where n._id = '{}' return n.label".format(address)
+            result = session.run(query)
+            return [record["n.label"] for record in result]
+        
+    def get_info_token_by_assets(self):
+        pass
 
 
 if __name__ == "__main__":
